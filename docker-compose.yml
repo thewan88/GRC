@@ -1,0 +1,148 @@
+version: '3.9'
+
+# GRC Tool — On-Premises Docker Compose
+# Designed for Nutanix AHV cluster deployment.
+# For production on Nutanix Kubernetes Engine (NKE), use docker-compose.prod.yml.
+#
+# Services:
+#   mssql     — Microsoft SQL Server 2022
+#   backend   — Laravel 11 API (PHP 8.4, FPM via Nginx unit)
+#   frontend  — Next.js 14 (internal GRC + Trust Centre)
+#   nginx     — Reverse proxy, TLS termination, hostname routing
+#   mailpit   — Local SMTP catch-all (dev only; replace with SMTP relay in prod)
+
+networks:
+  grc_internal:
+    driver: bridge
+
+volumes:
+  mssql_data:
+    driver: local
+  # In production bind-mount to Nutanix Files NFS share:
+  # driver_opts: { type: nfs, o: addr=<nutanix-files-ip>,rw, device: ":/grc-documents" }
+  grc_documents:
+    driver: local
+  nginx_certs:
+    driver: local
+
+services:
+  # ─── Microsoft SQL Server 2022 ──────────────────────────────────────────────
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: grc_mssql
+    restart: unless-stopped
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "${DB_PASSWORD}"
+      MSSQL_PID: Developer          # Change to Standard/Enterprise in prod
+    ports:
+      - "1433:1433"                  # Expose only on internal network in prod
+    volumes:
+      - mssql_data:/var/opt/mssql
+    networks:
+      - grc_internal
+    healthcheck:
+      test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "${DB_PASSWORD}" -Q "SELECT 1" -C -b -o /dev/null
+      interval: 10s
+      retries: 10
+      start_period: 30s
+
+  # ─── Laravel 11 Backend ─────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        PHP_VERSION: "8.4"
+    container_name: grc_backend
+    restart: unless-stopped
+    depends_on:
+      mssql:
+        condition: service_healthy
+    environment:
+      APP_ENV: "${APP_ENV:-local}"
+      APP_KEY: "${APP_KEY}"
+      APP_URL: "${APP_INTERNAL_URL:-http://localhost}"
+      TRUST_CENTRE_URL: "${TRUST_CENTRE_URL:-http://localhost/trust-centre}"
+      DB_CONNECTION: sqlsrv
+      DB_HOST: mssql
+      DB_PORT: 1433
+      DB_DATABASE: "${DB_DATABASE:-grc}"
+      DB_USERNAME: "${DB_USERNAME:-sa}"
+      DB_PASSWORD: "${DB_PASSWORD}"
+      SANCTUM_STATEFUL_DOMAINS: "${SANCTUM_STATEFUL_DOMAINS:-localhost,localhost:3000}"
+      SESSION_DOMAIN: "${SESSION_DOMAIN:-localhost}"
+      AZURE_CLIENT_ID: "${AZURE_CLIENT_ID}"
+      AZURE_CLIENT_SECRET: "${AZURE_CLIENT_SECRET}"
+      AZURE_TENANT_ID: "${AZURE_TENANT_ID}"
+      AZURE_REDIRECT_URI: "${AZURE_REDIRECT_URI}"
+      MAIL_MAILER: "${MAIL_MAILER:-smtp}"
+      MAIL_HOST: "${MAIL_HOST:-mailpit}"
+      MAIL_PORT: "${MAIL_PORT:-1025}"
+      MAIL_FROM_ADDRESS: "${MAIL_FROM_ADDRESS:-grc@company.com}"
+      MAIL_FROM_NAME: "${MAIL_FROM_NAME:-GRC Platform}"
+      FILESYSTEM_DISK: local
+      DOCUMENT_STORAGE_PATH: /var/grc-documents
+    volumes:
+      - ./backend:/var/www/html
+      - grc_documents:/var/grc-documents
+    networks:
+      - grc_internal
+    healthcheck:
+      test: ["CMD", "php", "artisan", "health"]
+      interval: 30s
+      retries: 3
+      start_period: 60s
+
+  # ─── Next.js 14 Frontend ────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: development            # Use 'production' target in prod
+    container_name: grc_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      NEXT_PUBLIC_API_URL: "${NEXT_PUBLIC_API_URL:-http://backend}"
+      NEXT_PUBLIC_TRUST_CENTRE_URL: "${TRUST_CENTRE_URL:-http://localhost/trust-centre}"
+      NODE_ENV: "${NODE_ENV:-development}"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules          # Anonymous volume — keeps container node_modules
+      - /app/.next                  # Anonymous volume — Next.js build cache
+    networks:
+      - grc_internal
+
+  # ─── Nginx Reverse Proxy ────────────────────────────────────────────────────
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: grc_nginx
+    restart: unless-stopped
+    depends_on:
+      - backend
+      - frontend
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - nginx_certs:/etc/nginx/certs:ro
+      - grc_documents:/var/grc-documents:ro  # Serve documents via nginx (direct download)
+    networks:
+      - grc_internal
+
+  # ─── Mailpit (dev SMTP) ──────────────────────────────────────────────────────
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: grc_mailpit
+    restart: unless-stopped
+    ports:
+      - "8025:8025"                  # Web UI for viewing emails in dev
+      - "1025:1025"                  # SMTP
+    networks:
+      - grc_internal
+    profiles:
+      - dev                          # Only starts with: docker compose --profile dev up
