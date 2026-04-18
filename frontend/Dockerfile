@@ -1,3 +1,16 @@
+# ─── Stage 0: development ─────────────────────────────────────────────────────
+FROM node:20-alpine AS development
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm ci --prefer-offline
+
+ENV NODE_ENV=development
+ENV PORT=3000
+EXPOSE 3000
+
+CMD ["npm", "run", "dev"]
+
 # ─── Stage 1: deps ────────────────────────────────────────────────────────────
 FROM node:20-alpine AS deps
 WORKDIR /app

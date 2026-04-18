@@ -17,8 +17,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libonig-dev \
         libpng-dev \
         libxml2-dev \
-    && curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - \
-    && curl https://packages.microsoft.com/config/debian/12/prod.list \
+    && curl -fsSL https://packages.microsoft.com/keys/microsoft.asc \
+         | gpg --dearmor -o /usr/share/keyrings/microsoft-prod.gpg \
+    && echo "deb [arch=amd64,arm64,armhf signed-by=/usr/share/keyrings/microsoft-prod.gpg] https://packages.microsoft.com/debian/12/prod bookworm main" \
          > /etc/apt/sources.list.d/mssql-release.list \
     && apt-get update \
     && ACCEPT_EULA=Y apt-get install -y msodbcsql18 unixodbc-dev \
@@ -48,8 +49,9 @@ RUN composer install --no-scripts --no-autoloader --no-interaction
 COPY . .
 RUN composer dump-autoload --optimize
 
-# Run migrations and start PHP-FPM
-CMD ["sh", "-c", "php artisan migrate --force && php artisan db:seed --force && php -S 0.0.0.0:8000 -t public"]
+COPY docker-entrypoint.dev.sh /usr/local/bin/docker-entrypoint.dev.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.dev.sh
+CMD ["/usr/local/bin/docker-entrypoint.dev.sh"]
 
 # ─── Production stage ──────────────────────────────────────────────────────────
 FROM base AS production

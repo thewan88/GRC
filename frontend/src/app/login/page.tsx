@@ -1,19 +1,38 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useState } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Shield } from 'lucide-react';
+import api, { initCsrf } from '@/lib/api';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+const IS_DEV   = process.env.NODE_ENV === 'development';
 
 export default function LoginPage() {
   const params = useSearchParams();
+  const router = useRouter();
   const error  = params.get('error');
+  const redirect = params.get('redirect') ?? '/dashboard';
   const [loading, setLoading] = useState(false);
+  const [devError, setDevError] = useState<string | null>(null);
 
   const handleLogin = () => {
     setLoading(true);
     window.location.href = `${API_BASE}/api/v1/auth/redirect`;
+  };
+
+  const handleDevLogin = async () => {
+    setDevError(null);
+    setLoading(true);
+    try {
+      await initCsrf();
+      await api.post('/auth/dev-login');
+      router.push(redirect);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setDevError(msg);
+      setLoading(false);
+    }
   };
 
   return (
@@ -57,6 +76,21 @@ export default function LoginPage() {
             </svg>
             {loading ? 'Redirecting...' : 'Sign in with Microsoft'}
           </button>
+
+          {IS_DEV && (
+            <>
+              <button
+                onClick={handleDevLogin}
+                disabled={loading}
+                className="mt-3 flex w-full items-center justify-center rounded-lg border border-dashed border-amber-400 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800 transition-colors hover:bg-amber-100 disabled:opacity-60"
+              >
+                {loading ? 'Logging in...' : 'Dev Login (admin) — local only'}
+              </button>
+              {devError && (
+                <p className="mt-2 text-xs text-red-600 text-center">{devError}</p>
+              )}
+            </>
+          )}
         </div>
 
         <p className="mt-6 text-center text-xs text-slate-500">

@@ -21,8 +21,8 @@ export function middleware(request: NextRequest): NextResponse {
     return NextResponse.next();
   }
 
-  // Check for Sanctum session cookie (Laravel sets 'laravel_session')
-  const session = request.cookies.get('laravel_session');
+  // Check for Sanctum session cookie (Laravel sets 'laravel-session')
+  const session = request.cookies.get('laravel-session');
 
   if (!session) {
     // Redirect to login — login page will redirect to Entra ID

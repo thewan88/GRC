@@ -24,7 +24,7 @@ return new class extends Migration
             $table->text('implementation_notes')->nullable();
             $table->text('evidence')->nullable();               // JSON array
 
-            $table->foreignUuid('owner_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignUuid('owner_id')->nullable()->constrained('users')->noActionOnDelete();
             $table->date('last_review_date')->nullable();
             $table->timestamps();
 

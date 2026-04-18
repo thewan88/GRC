@@ -17,8 +17,8 @@ return new class extends Migration
             $table->string('asset_type', 20);
             // Data | System | Software | People | Physical | Service
 
-            $table->foreignUuid('owner_id')->nullable()->constrained('users')->nullOnDelete();
-            $table->foreignUuid('custodian_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignUuid('owner_id')->nullable()->constrained('users')->noActionOnDelete();
+            $table->foreignUuid('custodian_id')->nullable()->constrained('users')->noActionOnDelete();
 
             $table->string('classification', 15);
             // Public | Internal | Confidential | Restricted
@@ -42,13 +42,20 @@ return new class extends Migration
             $table->date('review_date')->nullable();
             $table->string('status', 10)->default('Active');  // Active | Archived | Disposed
 
-            $table->foreignUuid('created_by_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignUuid('created_by_id')->nullable()->constrained('users')->noActionOnDelete();
             $table->timestamps();
 
             $table->index('classification');
             $table->index('asset_type');
             $table->index('owner_id');
             $table->index('review_date');
+        });
+
+        // Risk ↔ Control (many-to-many) — created here so both risks and controls exist
+        Schema::create('risk_controls', function (Blueprint $table) {
+            $table->foreignUuid('risk_id')->constrained('risks')->cascadeOnDelete();
+            $table->foreignUuid('control_id')->constrained('controls')->cascadeOnDelete();
+            $table->primary(['risk_id', 'control_id']);
         });
 
         // Asset ↔ Risk (many-to-many)
@@ -81,6 +88,7 @@ return new class extends Migration
         Schema::dropIfExists('asset_third_parties');
         Schema::dropIfExists('asset_controls');
         Schema::dropIfExists('asset_risks');
+        Schema::dropIfExists('risk_controls');
         Schema::dropIfExists('assets');
     }
 };

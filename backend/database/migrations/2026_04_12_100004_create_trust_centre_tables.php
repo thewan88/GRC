@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('ico_reference', 50)->nullable();       // ICO registration number
             $table->string('iso_cert_number', 100)->nullable();    // ISO 27001 cert number
             $table->text('description')->nullable();               // Company compliance overview
-            $table->foreignUuid('updated_by_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignUuid('updated_by_id')->nullable()->constrained('users')->noActionOnDelete();
             $table->timestamps();
         });
 
@@ -55,7 +55,7 @@ return new class extends Migration
 
             $table->string('version', 20)->nullable();        // "v2.1"
             $table->boolean('is_published')->default(false);
-            $table->foreignUuid('published_by_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignUuid('published_by_id')->nullable()->constrained('users')->noActionOnDelete();
             $table->timestamp('published_at')->nullable();
             $table->timestamps();
 
@@ -78,7 +78,7 @@ return new class extends Migration
             $table->timestamp('token_expires_at')->nullable();
             $table->boolean('nda_accepted')->default(false);
 
-            $table->foreignUuid('reviewed_by_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignUuid('reviewed_by_id')->nullable()->constrained('users')->noActionOnDelete();
             $table->timestamp('reviewed_at')->nullable();
             $table->timestamps();
 

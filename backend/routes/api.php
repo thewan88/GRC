@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\V1\AssetController;
 use App\Http\Controllers\Api\V1\AuditLogController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\ControlController;
+use App\Http\Controllers\Api\V1\DevAuthController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\RiskController;
 use App\Http\Controllers\Api\V1\TrustCentreController;
@@ -12,6 +13,11 @@ use Illuminate\Support\Facades\Route;
 
 // ─── v1 API ───────────────────────────────────────────────────────────────────
 Route::prefix('v1')->group(function () {
+
+    // ── Dev-only login bypass (local env only) ────────────────────────────────
+    if (app()->environment('local')) {
+        Route::post('auth/dev-login', [DevAuthController::class, 'login']);
+    }
 
     // ── Auth (Entra ID OAuth2) ────────────────────────────────────────────────
     Route::prefix('auth')->group(function () {

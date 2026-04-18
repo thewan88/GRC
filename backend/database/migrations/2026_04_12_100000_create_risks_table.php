@@ -21,7 +21,7 @@ return new class extends Migration
             // FCA-specific tags: ["SYSC","COBS","MAR","Operational Resilience"]
             $table->string('fca_tags', 500)->nullable();
 
-            $table->foreignUuid('owner_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignUuid('owner_id')->nullable()->constrained('users')->noActionOnDelete();
 
             $table->tinyInteger('likelihood');  // 1–5
             $table->tinyInteger('impact');      // 1–5
@@ -40,7 +40,7 @@ return new class extends Migration
             $table->date('review_date')->nullable();
             $table->string('status', 15)->default('Open');  // Open|In Review|Closed
 
-            $table->foreignUuid('created_by_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignUuid('created_by_id')->nullable()->constrained('users')->noActionOnDelete();
             $table->timestamps();
 
             // Indexes for common queries
@@ -50,17 +50,10 @@ return new class extends Migration
             $table->index('owner_id');
         });
 
-        // Risk ↔ Control (many-to-many)
-        Schema::create('risk_controls', function (Blueprint $table) {
-            $table->foreignUuid('risk_id')->constrained('risks')->cascadeOnDelete();
-            $table->foreignUuid('control_id')->constrained('controls')->cascadeOnDelete();
-            $table->primary(['risk_id', 'control_id']);
-        });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('risk_controls');
         Schema::dropIfExists('risks');
     }
 };
