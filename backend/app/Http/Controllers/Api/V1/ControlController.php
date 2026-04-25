@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Control;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Http\Response;
 use Illuminate\Validation\Rule;
 
@@ -46,7 +47,7 @@ class ControlController extends Controller
     /** PUT /api/v1/controls/{control} */
     public function update(Request $request, Control $control): JsonResponse
     {
-        $this->authorize('update', $control);
+        Gate::authorize('update', $control);
 
         $validated = $request->validate([
             'status' => ['sometimes', Rule::in([
@@ -79,7 +80,7 @@ class ControlController extends Controller
      */
     public function statementOfApplicability(): Response
     {
-        $this->authorize('create', \App\Models\Risk::class); // Risk Manager+
+        Gate::authorize('create', \App\Models\Risk::class); // Risk Manager+
 
         $controls = Control::with('owner:id,full_name')->orderBy('control_ref')->get();
 

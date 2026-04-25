@@ -1,6 +1,7 @@
 'use client';
 
 import { useUsers } from '@/hooks/useUsers';
+import CreateUserPanel from '@/components/users/CreateUserPanel';
 
 interface Props {
   title: string;
@@ -52,6 +53,7 @@ export default function Step2Details({ title, description, owner_id, onChange }:
             <option key={u.id} value={u.id}>{u.full_name} ({u.email})</option>
           ))}
         </select>
+        <CreateUserPanel defaultRole="risk_manager" onCreated={(user) => onChange({ owner_id: user.id })} />
         <p className="mt-1 text-xs text-gray-500">The person accountable for managing and monitoring this risk.</p>
       </div>
     </div>

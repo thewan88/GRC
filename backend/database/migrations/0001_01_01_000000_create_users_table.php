@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->uuid('id')->primary()->default(DB::raw('(NEWSEQUENTIALID())'));
-            $table->string('azure_oid', 36)->unique()->nullable(); // Entra ID Object ID
+            $table->string('azure_oid', 36)->nullable(); // Entra ID Object ID
             $table->string('email', 255)->unique();
             $table->string('full_name', 255);
             $table->string('password')->nullable(); // Null for Entra ID-only users
@@ -19,6 +19,12 @@ return new class extends Migration
             $table->rememberToken();
             $table->timestamps();
         });
+
+        DB::statement("
+            CREATE UNIQUE INDEX [users_azure_oid_unique]
+            ON [users] ([azure_oid])
+            WHERE [azure_oid] IS NOT NULL
+        ");
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {
             $table->string('email')->primary();

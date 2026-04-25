@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Http\Response;
 
 class AuditLogController extends Controller
@@ -13,7 +14,7 @@ class AuditLogController extends Controller
     /** GET /api/v1/audit-log */
     public function index(Request $request): JsonResponse
     {
-        $this->authorize('viewAny', AuditLog::class);
+        Gate::authorize('viewAny', AuditLog::class);
 
         $logs = AuditLog::with('user:id,full_name,email')
             ->when($request->user_id, fn($q) => $q->where('user_id', $request->user_id))
@@ -47,7 +48,7 @@ class AuditLogController extends Controller
     /** GET /api/v1/audit-log/export/csv — admin only */
     public function exportCsv(Request $request): Response
     {
-        $this->authorize('export', AuditLog::class);
+        Gate::authorize('export', AuditLog::class);
 
         $logs = AuditLog::with('user:id,full_name')
             ->when($request->date_from, fn($q) => $q->where('created_at', '>=', $request->date_from))

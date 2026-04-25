@@ -8,6 +8,7 @@ use App\Models\AssetThirdParty;
 use App\Services\IdGeneratorService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Http\Response;
 use Illuminate\Validation\Rule;
 
@@ -41,7 +42,7 @@ class AssetController extends Controller
     /** POST /api/v1/assets */
     public function store(Request $request): JsonResponse
     {
-        $this->authorize('create', Asset::class);
+        Gate::authorize('create', Asset::class);
 
         $validated = $this->validateAsset($request);
 
@@ -79,7 +80,7 @@ class AssetController extends Controller
     /** PUT /api/v1/assets/{asset} */
     public function update(Request $request, Asset $asset): JsonResponse
     {
-        $this->authorize('update', $asset);
+        Gate::authorize('update', $asset);
 
         $validated = $this->validateAsset($request, updating: true);
         $asset->update($validated);
@@ -100,7 +101,7 @@ class AssetController extends Controller
     /** POST /api/v1/assets/{asset}/third-parties */
     public function addThirdParty(Request $request, Asset $asset): JsonResponse
     {
-        $this->authorize('update', $asset);
+        Gate::authorize('update', $asset);
         $validated = $request->validate([
             'party_name'    => 'required|string|max:255',
             'purpose'       => 'nullable|string',
@@ -113,7 +114,7 @@ class AssetController extends Controller
     /** DELETE /api/v1/assets/{asset}/third-parties/{thirdParty} */
     public function removeThirdParty(Asset $asset, AssetThirdParty $thirdParty): JsonResponse
     {
-        $this->authorize('update', $asset);
+        Gate::authorize('update', $asset);
         if ($thirdParty->asset_id !== $asset->id) {
             abort(404);
         }
@@ -135,7 +136,7 @@ class AssetController extends Controller
     /** GET /api/v1/assets/export/csv */
     public function exportCsv(): Response
     {
-        $this->authorize('create', Asset::class);
+        Gate::authorize('create', Asset::class);
 
         $assets = Asset::with(['owner:id,full_name', 'custodian:id,full_name', 'thirdParties'])->get();
 

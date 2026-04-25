@@ -29,19 +29,36 @@ class AuthController extends Controller
     {
         $azureUser = Socialite::driver('azure')->user();
 
-        // Upsert the user record — email is the canonical identifier,
-        // azure_oid is stored for stable identification (email can change)
-        $user = User::updateOrCreate(
-            ['azure_oid' => $azureUser->getId()],
-            [
+        // Attach Entra ID identities to invited users by email, otherwise
+        // update/create by the stable Azure object ID.
+        $user = User::where('azure_oid', $azureUser->getId())
+            ->orWhere(function ($query) use ($azureUser) {
+                $query->whereNull('azure_oid')
+                    ->where('email', $azureUser->getEmail());
+            })
+            ->first();
+
+        $wasRecentlyCreated = false;
+
+        if ($user) {
+            $user->update([
+                'azure_oid' => $azureUser->getId(),
                 'email'     => $azureUser->getEmail(),
                 'full_name' => $azureUser->getName(),
                 'password'  => null, // Entra ID users have no local password
-            ]
-        );
+            ]);
+        } else {
+            $user = User::create([
+                'azure_oid' => $azureUser->getId(),
+                'email'     => $azureUser->getEmail(),
+                'full_name' => $azureUser->getName(),
+                'password'  => null,
+            ]);
+            $wasRecentlyCreated = true;
+        }
 
         // First-time login: assign default viewer role
-        if ($user->wasRecentlyCreated) {
+        if ($wasRecentlyCreated) {
             $user->assignRole('viewer');
         }
 

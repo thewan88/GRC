@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 
 class UserController extends Controller
@@ -13,7 +15,7 @@ class UserController extends Controller
     /** GET /api/v1/users — list all users (admin only) */
     public function index(Request $request): JsonResponse
     {
-        $this->authorize('viewAny', User::class);
+        Gate::authorize('viewAny', User::class);
 
         $users = User::with('roles')
             ->when($request->search, fn($q) =>
@@ -36,17 +38,47 @@ class UserController extends Controller
         ]);
     }
 
+    /** POST /api/v1/users — create an invited/pending user (admin only) */
+    public function store(Request $request): JsonResponse
+    {
+        Gate::authorize('create', User::class);
+
+        $validated = $request->validate([
+            'email'     => ['required', 'email:rfc', 'max:255', 'unique:users,email'],
+            'full_name' => ['required', 'string', 'max:255'],
+            'role'      => ['required', Rule::in(['admin', 'risk_manager', 'asset_owner', 'viewer'])],
+        ]);
+
+        $user = DB::transaction(function () use ($validated) {
+            $user = User::create([
+                'email'     => strtolower($validated['email']),
+                'full_name' => $validated['full_name'],
+                'password'  => null,
+                'is_active' => true,
+            ]);
+
+            $user->assignRole($validated['role']);
+
+            return $user;
+        });
+
+        return response()->json([
+            'data'   => $this->formatUser($user->fresh()->load('roles')),
+            'errors' => null,
+        ], 201);
+    }
+
     /** GET /api/v1/users/{id} */
     public function show(User $user): JsonResponse
     {
-        $this->authorize('view', $user);
+        Gate::authorize('view', $user);
         return response()->json(['data' => $this->formatUser($user->load('roles')), 'errors' => null]);
     }
 
     /** PATCH /api/v1/users/{id}/role — change user role (admin only) */
     public function updateRole(Request $request, User $user): JsonResponse
     {
-        $this->authorize('update', $user);
+        Gate::authorize('update', $user);
 
         $validated = $request->validate([
             'role' => ['required', Rule::in(['admin', 'risk_manager', 'asset_owner', 'viewer'])],
@@ -60,7 +92,7 @@ class UserController extends Controller
     /** PATCH /api/v1/users/{id}/deactivate — deactivate user (admin only, never hard delete) */
     public function deactivate(User $user): JsonResponse
     {
-        $this->authorize('update', $user);
+        Gate::authorize('update', $user);
 
         if ($user->id === auth()->id()) {
             return response()->json(['data' => null, 'errors' => ['message' => 'Cannot deactivate your own account.']], 422);
@@ -74,7 +106,7 @@ class UserController extends Controller
     /** PATCH /api/v1/users/{id}/activate */
     public function activate(User $user): JsonResponse
     {
-        $this->authorize('update', $user);
+        Gate::authorize('update', $user);
         $user->update(['is_active' => true]);
         return response()->json(['data' => $this->formatUser($user->load('roles')), 'errors' => null]);
     }

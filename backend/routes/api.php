@@ -55,6 +55,7 @@ Route::prefix('v1')->group(function () {
         // Users (admin management)
         Route::prefix('users')->group(function () {
             Route::get('/', [UserController::class, 'index']);
+            Route::post('/', [UserController::class, 'store']);
             Route::get('{user}', [UserController::class, 'show']);
             Route::patch('{user}/role', [UserController::class, 'updateRole']);
             Route::patch('{user}/deactivate', [UserController::class, 'deactivate']);

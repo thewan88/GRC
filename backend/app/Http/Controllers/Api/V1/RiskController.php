@@ -7,6 +7,7 @@ use App\Models\Risk;
 use App\Services\IdGeneratorService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Http\Response;
 use Illuminate\Validation\Rule;
 
@@ -45,7 +46,7 @@ class RiskController extends Controller
     /** POST /api/v1/risks */
     public function store(Request $request): JsonResponse
     {
-        $this->authorize('create', Risk::class);
+        Gate::authorize('create', Risk::class);
 
         $validated = $request->validate([
             'title'               => 'required|string|max:500',
@@ -95,7 +96,7 @@ class RiskController extends Controller
     /** PUT /api/v1/risks/{risk} */
     public function update(Request $request, Risk $risk): JsonResponse
     {
-        $this->authorize('update', $risk);
+        Gate::authorize('update', $risk);
 
         $validated = $request->validate([
             'title'               => 'sometimes|string|max:500',
@@ -144,7 +145,7 @@ class RiskController extends Controller
     /** GET /api/v1/risks/export/csv */
     public function exportCsv(): Response
     {
-        $this->authorize('create', Risk::class); // Risk managers+
+        Gate::authorize('create', Risk::class); // Risk managers+
 
         $risks = Risk::with(['owner:id,full_name', 'controls:id,control_ref'])->get();
 

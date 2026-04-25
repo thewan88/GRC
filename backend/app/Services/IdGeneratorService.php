@@ -16,13 +16,7 @@ class IdGeneratorService
         $year = now()->year;
         $prefix = "RR-{$year}-";
 
-        $last = Risk::where('risk_id', 'like', "{$prefix}%")
-            ->orderByRaw("CAST(SUBSTRING(risk_id, " . (strlen($prefix) + 1) . ", 10) AS UNSIGNED) DESC")
-            ->value('risk_id');
-
-        $next = $last ? ((int) substr($last, strlen($prefix))) + 1 : 1;
-
-        return $prefix . str_pad($next, 3, '0', STR_PAD_LEFT);
+        return $this->nextId($prefix, Risk::where('risk_id', 'like', "{$prefix}%")->pluck('risk_id')->all());
     }
 
     /**
@@ -33,12 +27,27 @@ class IdGeneratorService
         $year = now()->year;
         $prefix = "IAR-{$year}-";
 
-        $last = Asset::where('asset_id', 'like', "{$prefix}%")
-            ->orderByRaw("CAST(SUBSTRING(asset_id, " . (strlen($prefix) + 1) . ", 10) AS UNSIGNED) DESC")
-            ->value('asset_id');
+        return $this->nextId($prefix, Asset::where('asset_id', 'like', "{$prefix}%")->pluck('asset_id')->all());
+    }
 
-        $next = $last ? ((int) substr($last, strlen($prefix))) + 1 : 1;
+    /**
+     * Parse the numeric suffix in PHP so the generator works across SQL Server
+     * and local databases without vendor-specific CAST syntax.
+     *
+     * @param array<int, string> $existingIds
+     */
+    private function nextId(string $prefix, array $existingIds): string
+    {
+        $highest = 0;
 
-        return $prefix . str_pad($next, 3, '0', STR_PAD_LEFT);
+        foreach ($existingIds as $id) {
+            $suffix = substr($id, strlen($prefix));
+
+            if (ctype_digit($suffix)) {
+                $highest = max($highest, (int) $suffix);
+            }
+        }
+
+        return $prefix . str_pad((string) ($highest + 1), 3, '0', STR_PAD_LEFT);
     }
 }

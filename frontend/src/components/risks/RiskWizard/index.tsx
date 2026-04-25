@@ -11,7 +11,7 @@ import Step4RCA       from './Step4RCA';
 import Step5Treatment from './Step5Treatment';
 import Step6Controls  from './Step6Controls';
 import Step7Summary   from './Step7Summary';
-import type { FcaTag, RcaMethod, RiskCategory, RiskTreatment, TreatmentAction, FishboneData, FiveWhyData } from '@/types';
+import type { RcaMethod, RiskCategory, FishboneData, FiveWhyData } from '@/types';
 import { useState } from 'react';
 
 const STEPS = [
@@ -158,12 +158,7 @@ export default function RiskWizard() {
             treatment_plan={data.treatment_plan}
             residual_likelihood={data.residual_likelihood}
             residual_impact={data.residual_impact}
-            onChange={(partial) => updateData({
-              treatment:           partial.treatment as RiskTreatment | null | undefined,
-              treatment_plan:      partial.treatment_plan as TreatmentAction[] | undefined,
-              residual_likelihood: partial.residual_likelihood,
-              residual_impact:     partial.residual_impact,
-            })}
+            onChange={(partial) => updateData(partial)}
           />
         )}
         {step === 6 && (

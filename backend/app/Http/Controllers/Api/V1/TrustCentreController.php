@@ -11,6 +11,7 @@ use App\Models\TrustCentreDocument;
 use App\Models\TrustCentreDocumentDownload;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
@@ -185,7 +186,7 @@ class TrustCentreController extends Controller
     /** GET /api/v1/trust-centre/admin/access-requests */
     public function adminAccessRequests(Request $request): JsonResponse
     {
-        $this->authorize('manage', TrustCentreAccessRequest::class);
+        Gate::authorize('manage', TrustCentreAccessRequest::class);
 
         $requests = TrustCentreAccessRequest::with('reviewedBy:id,full_name')
             ->when($request->status, fn($q) => $q->where('status', $request->status))
@@ -202,7 +203,7 @@ class TrustCentreController extends Controller
     /** PATCH /api/v1/trust-centre/admin/access-requests/{request}/approve */
     public function approveAccessRequest(TrustCentreAccessRequest $accessRequest): JsonResponse
     {
-        $this->authorize('manage', TrustCentreAccessRequest::class);
+        Gate::authorize('manage', TrustCentreAccessRequest::class);
 
         $plainToken = Str::random(48);
         $ttlDays    = (int) env('TRUST_CENTRE_TOKEN_TTL_DAYS', 7);
@@ -225,7 +226,7 @@ class TrustCentreController extends Controller
     /** PATCH /api/v1/trust-centre/admin/access-requests/{request}/reject */
     public function rejectAccessRequest(TrustCentreAccessRequest $accessRequest): JsonResponse
     {
-        $this->authorize('manage', TrustCentreAccessRequest::class);
+        Gate::authorize('manage', TrustCentreAccessRequest::class);
 
         $accessRequest->update([
             'status'         => 'rejected',
@@ -239,7 +240,7 @@ class TrustCentreController extends Controller
     /** POST /api/v1/trust-centre/admin/documents — upload a document */
     public function uploadDocument(Request $request): JsonResponse
     {
-        $this->authorize('manage', TrustCentreDocument::class);
+        Gate::authorize('manage', TrustCentreDocument::class);
 
         $validated = $request->validate([
             'title'       => 'required|string|max:500',
@@ -275,7 +276,7 @@ class TrustCentreController extends Controller
     /** GET /api/v1/trust-centre/admin/download-log */
     public function downloadLog(Request $request): JsonResponse
     {
-        $this->authorize('manage', TrustCentreDocument::class);
+        Gate::authorize('manage', TrustCentreDocument::class);
 
         $logs = TrustCentreDocumentDownload::with('document:id,title')
             ->latest('downloaded_at')

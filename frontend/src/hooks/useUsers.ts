@@ -12,6 +12,12 @@ export function useUser(id: string | undefined) {
   return useSWR<ApiResponse<User>>(id ? `/users/${id}` : null, fetcher);
 }
 
+export async function createUser(payload: Pick<User, 'email' | 'full_name' | 'role'>) {
+  const res = await api.post('/users', payload);
+  await mutate('/users', undefined, { revalidate: true });
+  return res.data.data as User;
+}
+
 export async function updateUserRole(id: string, role: User['role']) {
   const res = await api.patch(`/users/${id}/role`, { role });
   await mutate('/users', undefined, { revalidate: true });
@@ -19,7 +25,7 @@ export async function updateUserRole(id: string, role: User['role']) {
 }
 
 export async function deactivateUser(id: string) {
-  const res = await api.delete(`/users/${id}`);
+  const res = await api.patch(`/users/${id}/deactivate`);
   await mutate('/users', undefined, { revalidate: true });
   return res.data.data as User;
 }

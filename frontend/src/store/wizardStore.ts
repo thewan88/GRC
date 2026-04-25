@@ -48,20 +48,39 @@ const defaultRiskData: RiskWizardData = {
   status: 'Open',
 };
 
+function normaliseRiskData(data: Partial<RiskWizardData> | undefined): RiskWizardData {
+  return {
+    ...defaultRiskData,
+    ...data,
+    fca_tags: Array.isArray(data?.fca_tags) ? data.fca_tags : [],
+    treatment_plan: Array.isArray(data?.treatment_plan) ? data.treatment_plan : [],
+    control_ids: Array.isArray(data?.control_ids) ? data.control_ids : [],
+  };
+}
+
 export const useRiskWizardStore = create<RiskWizardStore>()(
   persist(
     (set) => ({
       step: 1,
-      data: defaultRiskData,
+      data: normaliseRiskData(),
       setStep: (step) => set({ step }),
       nextStep: () => set((s) => ({ step: Math.min(s.step + 1, 7) })),
       prevStep: () => set((s) => ({ step: Math.max(s.step - 1, 1) })),
-      updateData: (partial) => set((s) => ({ data: { ...s.data, ...partial } })),
+      updateData: (partial) => set((s) => ({ data: normaliseRiskData({ ...s.data, ...partial }) })),
       reset: () => set({ step: 1, data: defaultRiskData }),
     }),
     {
       name: 'grc-risk-wizard',
       storage: createJSONStorage(() => sessionStorage),
+      merge: (persisted, current) => {
+        const state = persisted as Partial<RiskWizardStore> | undefined;
+
+        return {
+          ...current,
+          ...state,
+          data: normaliseRiskData(state?.data),
+        };
+      },
     },
   ),
 );

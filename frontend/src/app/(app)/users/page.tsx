@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { cn, formatDate } from '@/lib/utils';
 import { useUsers, updateUserRole, deactivateUser } from '@/hooks/useUsers';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import CreateUserPanel from '@/components/users/CreateUserPanel';
 import type { User } from '@/types';
 
 const ROLES: { value: User['role']; label: string; description: string }[] = [
@@ -22,7 +23,7 @@ const ROLE_BADGE: Record<User['role'], string> = {
 
 export default function UsersPage() {
   const { user: currentUser }     = useCurrentUser();
-  const { data, isLoading, mutate } = useUsers() as ReturnType<typeof useUsers> & { mutate?: () => void };
+  const { data, isLoading } = useUsers();
   const users = data?.data ?? [];
   const [saving, setSaving]       = useState<string | null>(null);
 
@@ -57,7 +58,8 @@ export default function UsersPage() {
     <div className="space-y-4">
       <div>
         <h1 className="text-xl font-bold text-gray-900">User Management</h1>
-        <p className="text-sm text-gray-500">Manage roles for users who have logged in via Microsoft Entra ID.</p>
+        <p className="text-sm text-gray-500">Invite users and manage roles for Microsoft Entra ID access.</p>
+        <CreateUserPanel />
       </div>
 
       {/* Role legend */}

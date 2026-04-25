@@ -1,6 +1,7 @@
 'use client';
 
 import { useUsers } from '@/hooks/useUsers';
+import CreateUserPanel from '@/components/users/CreateUserPanel';
 import type { AssetLocationType } from '@/types';
 
 const LOCATION_TYPES: { value: AssetLocationType; label: string }[] = [
@@ -66,6 +67,7 @@ export default function Step2CoreDetails({ name, description, owner_id, custodia
             <option value="">— Unassigned —</option>
             {users.map((u) => <option key={u.id} value={u.id}>{u.full_name}</option>)}
           </select>
+          <CreateUserPanel defaultRole="asset_owner" onCreated={(user) => onChange({ owner_id: user.id })} />
           <p className="mt-1 text-xs text-gray-500">Accountable for the asset.</p>
         </div>
         <div>
@@ -78,6 +80,7 @@ export default function Step2CoreDetails({ name, description, owner_id, custodia
             <option value="">— Unassigned —</option>
             {users.map((u) => <option key={u.id} value={u.id}>{u.full_name}</option>)}
           </select>
+          <CreateUserPanel defaultRole="asset_owner" onCreated={(user) => onChange({ custodian_id: user.id })} />
           <p className="mt-1 text-xs text-gray-500">Day-to-day responsible party.</p>
         </div>
       </div>

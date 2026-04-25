@@ -3,9 +3,7 @@
 import { useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Shield } from 'lucide-react';
-import api, { initCsrf } from '@/lib/api';
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+import api, { API_BASE, initCsrf } from '@/lib/api';
 const IS_DEV   = process.env.NODE_ENV === 'development';
 
 export default function LoginPage() {

@@ -1,6 +1,37 @@
 import axios, { AxiosError, type AxiosInstance } from 'axios';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+function getApiBase(): string {
+  const configured = process.env.NEXT_PUBLIC_API_URL?.trim();
+
+  if (!configured) {
+    return '';
+  }
+
+  if (typeof window === 'undefined') {
+    return configured;
+  }
+
+  const currentHost = window.location.hostname;
+  const currentIsLocal = currentHost === 'localhost' || currentHost === '127.0.0.1';
+
+  try {
+    const configuredUrl = new URL(configured, window.location.origin);
+    const configuredIsLocal =
+      configuredUrl.hostname === 'localhost' || configuredUrl.hostname === '127.0.0.1';
+
+    // If the app is opened on a real hostname behind nginx, keep API calls on
+    // the same origin so CSRF/session cookies are scoped to the active site.
+    if (configuredIsLocal && !currentIsLocal) {
+      return '';
+    }
+
+    return configuredUrl.origin === window.location.origin ? '' : configuredUrl.origin;
+  } catch {
+    return configured;
+  }
+}
+
+export const API_BASE = getApiBase();
 
 const api: AxiosInstance = axios.create({
   baseURL: `${API_BASE}/api/v1`,

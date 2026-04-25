@@ -13,7 +13,7 @@ const TREATMENTS: { value: RiskTreatment; label: string; description: string; ic
 
 interface Props {
   treatment: RiskTreatment | null;
-  treatment_plan: TreatmentAction[];
+  treatment_plan?: TreatmentAction[];
   residual_likelihood: number | null;
   residual_impact: number | null;
   onChange: (partial: {
@@ -27,23 +27,24 @@ interface Props {
 export default function Step5Treatment({ treatment, treatment_plan, residual_likelihood, residual_impact, onChange }: Props) {
   const { data } = useUsers();
   const users = data?.data ?? [];
+  const treatmentPlan = treatment_plan ?? [];
 
   function addAction() {
     onChange({
       treatment_plan: [
-        ...treatment_plan,
+        ...treatmentPlan,
         { action: '', owner_id: null, target_date: null, status: 'Not Started' },
       ],
     });
   }
 
   function updateAction(index: number, partial: Partial<TreatmentAction>) {
-    const updated = treatment_plan.map((a, i) => i === index ? { ...a, ...partial } : a);
+    const updated = treatmentPlan.map((a, i) => i === index ? { ...a, ...partial } : a);
     onChange({ treatment_plan: updated });
   }
 
   function removeAction(index: number) {
-    onChange({ treatment_plan: treatment_plan.filter((_, i) => i !== index) });
+    onChange({ treatment_plan: treatmentPlan.filter((_, i) => i !== index) });
   }
 
   const residualScore = residual_likelihood && residual_impact ? residual_likelihood * residual_impact : null;
@@ -84,11 +85,11 @@ export default function Step5Treatment({ treatment, treatment_plan, residual_lik
             </button>
           </div>
 
-          {treatment_plan.length === 0 ? (
+          {treatmentPlan.length === 0 ? (
             <p className="text-xs text-gray-400">No actions added yet. Click &ldquo;Add Action&rdquo; to create a treatment step.</p>
           ) : (
             <div className="space-y-3">
-              {treatment_plan.map((action, i) => (
+              {treatmentPlan.map((action, i) => (
                 <div key={i} className="rounded-lg border border-gray-200 bg-gray-50 p-4">
                   <div className="mb-2 flex items-center justify-between">
                     <span className="text-xs font-semibold text-gray-500">Action #{i + 1}</span>
